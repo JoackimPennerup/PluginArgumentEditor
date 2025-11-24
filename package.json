@@ -20,7 +20,7 @@
     "lezer": "^0.13.5"
   },
   "devDependencies": {
-    "lezer-generator": "^0.13.4",
+    "@lezer/generator": "^1.8.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.2"
   }

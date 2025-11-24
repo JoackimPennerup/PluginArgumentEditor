@@ -14,15 +14,34 @@ export interface PluginDef {
   arguments: Record<string, ArgumentDef>;
 }
 
+export type PluginRegistry = Record<string, PluginDef[]>;
 export type TopLevelKey = keyof typeof registryData;
 
 export const BROKER_PREFIX = "iipax.generic.plugin.broker.";
 
+const registry: PluginRegistry = registryData as PluginRegistry;
+
 const pluginMapsByTopLevel = new Map<string, Map<string, PluginDef>>();
 const pluginToTopLevel = new Map<string, string>();
 
+function buildPluginsByType(source: PluginRegistry): Map<string, PluginDef[]> {
+  return new Map<string, PluginDef[]>(Object.entries(source));
+}
+
+function buildPluginsByName(source: PluginRegistry): Map<string, PluginDef> {
+  const map = new Map<string, PluginDef>();
+
+  for (const pluginList of Object.values(source)) {
+    for (const plugin of pluginList) {
+      map.set(plugin.name, plugin as PluginDef);
+    }
+  }
+
+  return map;
+}
+
 (function buildPluginMaps() {
-  for (const [topLevel, pluginList] of Object.entries(registryData)) {
+  for (const [topLevel, pluginList] of Object.entries(registry)) {
     const map = new Map<string, PluginDef>();
 
     for (const plugin of pluginList) {
@@ -49,3 +68,6 @@ export function getPluginMapForTopLevel(topLevel: string): Map<string, PluginDef
 export function findTopLevelForPlugin(pluginName: string): string | undefined {
   return pluginToTopLevel.get(pluginName);
 }
+
+export const pluginsByType = buildPluginsByType(registry);
+export const pluginsByName: Map<string, PluginDef> = buildPluginsByName(registry);

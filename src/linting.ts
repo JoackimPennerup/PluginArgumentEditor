@@ -1,7 +1,11 @@
 import { Diagnostic, linter } from "@codemirror/lint";
 import { syntaxTree } from "@codemirror/language";
 import { SyntaxNode, TreeCursor } from "@lezer/common";
-import { PluginDef } from "./pluginRegistry";
+import { PluginDef, pluginsByName } from "./pluginRegistry";
+
+interface PluginResolver {
+  (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
+}
 
 function walkTree(cursor: TreeCursor, visit: (cursor: TreeCursor) => void) {
   for (;;) {
@@ -44,8 +48,15 @@ function validateArgument(
   return null;
 }
 
-export function createPluginConfigLinter(pluginMap: Map<string, PluginDef>) {
-  return linter((view) => {
+export function createPluginConfigLinter(
+  resolvePlugin: PluginResolver | Map<string, PluginDef> = (name) => pluginsByName.get(name) ?? null
+) {
+  const resolver: PluginResolver =
+    resolvePlugin instanceof Map
+      ? (name) => resolvePlugin.get(name) ?? null
+      : resolvePlugin;
+
+  return linter(async (view) => {
     const diagnostics: Diagnostic[] = [];
     const tree = syntaxTree(view.state);
     const doc = view.state.doc.toString();
@@ -73,7 +84,7 @@ export function createPluginConfigLinter(pluginMap: Map<string, PluginDef>) {
     }
 
     const pluginName = readNodeText(pluginNode, doc);
-    const pluginDef = pluginMap.get(pluginName);
+    const pluginDef = await resolver(pluginName);
 
     if (!pluginDef) {
       diagnostics.push({
@@ -137,3 +148,5 @@ export function createPluginConfigLinter(pluginMap: Map<string, PluginDef>) {
     return diagnostics;
   });
 }
+
+export const pluginConfigLinter = createPluginConfigLinter();
