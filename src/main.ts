@@ -1,6 +1,6 @@
 import { basicSetup, EditorView } from "codemirror";
 import { EditorState, Compartment } from "@codemirror/state";
-import { autocompletion } from "@codemirror/autocomplete";
+import { autocompletion, startCompletion } from "@codemirror/autocomplete";
 import { pluginConfigLanguage } from "./pluginConfigLanguage";
 import { createPluginConfigLinter } from "./linting";
 import {
@@ -74,6 +74,10 @@ const view = new EditorView({
   parent: editorParent
 });
 
+view.contentDOM.addEventListener("focus", () => {
+  startCompletion(view);
+});
+
 topLevelSelect.addEventListener("change", (event) => {
   const selectedKey = (event.target as HTMLSelectElement).value;
 
@@ -83,4 +87,6 @@ topLevelSelect.addEventListener("change", (event) => {
       completionCompartment.reconfigure(pluginCompletion(selectedKey))
     ]
   });
+
+  startCompletion(view);
 });
