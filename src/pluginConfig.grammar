@@ -1,0 +1,54 @@
+@top Config {
+  ConfigLine
+}
+
+ConfigLine {
+  PluginClass Arg*
+}
+
+Arg {
+  ArgName "=" Value
+}
+
+Value {
+  String
+| Int
+| Boolean
+| BareValue
+}
+
+@tokens {
+  PluginClass {
+    $[A-Za-z_] $[A-Za-z0-9_]*
+    ("." $[A-Za-z0-9_]+)*
+  }
+
+  ArgName {
+    $[A-Za-z_] $[A-Za-z0-9_]*
+  }
+
+  BareValue {
+    $[A-Za-z0-9_\-./:@%?&]+
+  }
+
+  Int {
+    "-"? $[0-9]+
+  }
+
+  Boolean {
+    "true" | "false" | "TRUE" | "FALSE"
+  }
+
+  String {
+    "\"" (
+      !["\\]
+      | "\\" _
+    )* "\""
+  }
+
+  space { std.whitespace+ }
+  
+  @precedence { Boolean, Int, BareValue }
+}
+
+@skip { space }

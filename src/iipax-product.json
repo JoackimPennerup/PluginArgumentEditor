@@ -1,0 +1,25 @@
+{
+  "iipax.generic.plugin.broker.PushPlugin": [
+    {
+      "name": "iipax.service.brokerkernel.plugin.MailPushPlugin",
+      "description": "Sends broker messages as e-mails synchronously.",
+      "arguments": {
+        "SmtpHost": { "type": "string" },
+        "SmtpPort": { "type": "int" },
+        "FromEmailAddress": { "type": "string" },
+        "ToEmailAddress": { "type": "string" },
+        "Attachment": { "type": "int", "multivalued": true }
+      }
+    }
+  ],
+  "iipax.generic.plugin.broker.SynchronousPlugin": [
+    {
+      "name": "iipax.business.iinsight.brokerplugin.MessagePushPlugin",
+      "arguments": {
+        "JournalIdMinLength": { "type": "int" },
+        "JournalIdRegExp": { "type": "string" },
+        "Partition": { "type": "string" }
+      }
+    }
+  ]
+}
