@@ -127,7 +127,7 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     const pluginMatch = context.matchBefore(/[A-Za-z0-9_.]*/);
 
     if (!pluginNode || nodeBefore.type.name === "PluginClass" || context.pos <= pluginNode.to) {
-      if (!pluginMatch || (pluginMatch.from === pluginMatch.to && !context.explicit)) {
+      if (!pluginMatch) {
         return null;
       }
 
