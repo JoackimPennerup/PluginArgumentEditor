@@ -45,6 +45,11 @@ topLevelSelect.value = defaultTopLevel;
 
 const linterCompartment = new Compartment();
 const completionCompartment = new Compartment();
+const completionRetarget = EditorView.updateListener.of((update) => {
+  if (update.docChanged && update.view.hasFocus) {
+    triggerCompletionIfFocused();
+  }
+});
 
 function pluginLinter(topLevelKey: string) {
   const pluginMap = getPluginMapForTopLevel(topLevelKey);
@@ -79,7 +84,8 @@ const state = EditorState.create({
     basicSetup,
     pluginConfigLanguage,
     linterCompartment.of(pluginLinter(defaultTopLevel)),
-    completionCompartment.of(pluginCompletion(defaultTopLevel))
+    completionCompartment.of(pluginCompletion(defaultTopLevel)),
+    completionRetarget
   ]
 });
 

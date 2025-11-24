@@ -127,12 +127,12 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     const pluginMatch = context.matchBefore(/[A-Za-z0-9_.]*/);
 
     if (!pluginNode || nodeBefore.type.name === "PluginClass" || context.pos <= pluginNode.to) {
-      if (!pluginMatch) {
+      if (!pluginMatch && !context.explicit) {
         return null;
       }
 
       return {
-        from: pluginMatch.from,
+        from: pluginMatch?.from ?? context.pos,
         options: pluginOptions,
         validFor: /[A-Za-z0-9_.]*/
       };
@@ -146,8 +146,9 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     }
 
     const argMatch = context.matchBefore(/[A-Za-z_][A-Za-z0-9_]*/);
+    const allowEmptyArg = context.explicit || !!argMatch;
 
-    if (!argMatch || (argMatch.from === argMatch.to && !context.explicit)) {
+    if (!allowEmptyArg) {
       return null;
     }
 
@@ -155,7 +156,7 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     const argOptions = buildArgOptions(pluginDef, seenArgs);
 
     return {
-      from: argMatch.from,
+      from: argMatch?.from ?? context.pos,
       options: argOptions,
       validFor: /[A-Za-z_][A-Za-z0-9_]*/
     };
