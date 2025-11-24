@@ -26,10 +26,33 @@
       .cm-editor {
         height: 220px;
       }
+
+      .toolbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+
+      .toolbar label {
+        font-weight: 600;
+      }
+
+      .toolbar select {
+        padding: 0.35rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #d0d7de;
+        background: #fff;
+        font-size: 0.95rem;
+      }
     </style>
   </head>
   <body>
     <h1>Plugin Argument Editor</h1>
+    <div class="toolbar">
+      <label for="registry-select">Registry type:</label>
+      <select id="registry-select"></select>
+    </div>
     <div id="editor"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

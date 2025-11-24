@@ -10,17 +10,18 @@
     "build-grammar": "lezer-generator src/pluginConfig.grammar -o src/pluginConfigParser.js && mv src/pluginConfigParser.js src/pluginConfigParser.ts && mv src/pluginConfigParser.terms.js src/pluginConfigParser.terms.ts"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/language": "^6.10.1",
     "@codemirror/lint": "^6.8.0",
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.29.1",
-    "lezer": "^0.13.5",
+    "@lezer/lr": "^1.3.9",
     "codemirror": "^6.0.1",
-    "@lezer/lr": "^1.3.9"
+    "lezer": "^0.13.5"
   },
   "devDependencies": {
+    "lezer-generator": "^0.13.4",
     "typescript": "^5.5.4",
-    "vite": "^5.4.2",
-    "lezer-generator": "^0.13.4"
+    "vite": "^5.4.2"
   }
 }
