@@ -9,7 +9,7 @@ import {
   getPluginMapForTopLevel,
   listTopLevelKeys
 } from "./pluginRegistry";
-import { pluginConfigCompletionSource } from "./completions";
+import { findCompletionRange, pluginConfigCompletionSource } from "./completions";
 
 const initialConfig =
   "iipax.service.brokerkernel.plugin.MailPushPlugin SmtpHost=192.168.0.52 SmtpPort=abc Attachment=1 Attachment=2 UnknownArg=42";
@@ -59,6 +59,20 @@ function pluginCompletion(topLevelKey: string) {
   });
 }
 
+function triggerCompletionIfFocused() {
+  if (!view.hasFocus) {
+    return;
+  }
+
+  const match = findCompletionRange(view.state);
+
+  if (match && match.from < match.to) {
+    view.dispatch({ selection: { anchor: match.from, head: match.to } });
+  }
+
+  startCompletion(view);
+}
+
 const state = EditorState.create({
   doc: initialConfig,
   extensions: [
@@ -75,7 +89,7 @@ const view = new EditorView({
 });
 
 view.contentDOM.addEventListener("focus", () => {
-  startCompletion(view);
+  triggerCompletionIfFocused();
 });
 
 topLevelSelect.addEventListener("change", (event) => {
@@ -88,5 +102,5 @@ topLevelSelect.addEventListener("change", (event) => {
     ]
   });
 
-  startCompletion(view);
+  triggerCompletionIfFocused();
 });

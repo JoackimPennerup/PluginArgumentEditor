@@ -1,4 +1,5 @@
 import { Completion, CompletionContext } from "@codemirror/autocomplete";
+import { EditorState } from "@codemirror/state";
 import { syntaxTree } from "@codemirror/language";
 import { SyntaxNode, TreeCursor } from "@lezer/common";
 import { PluginDef } from "./pluginRegistry";
@@ -70,6 +71,43 @@ function buildArgOptions(plugin: PluginDef, seenArgs: string[]): Completion[] {
       detail: def.type,
       info: def.description
     }));
+}
+
+function matchBefore(
+  doc: string,
+  pos: number,
+  pattern: RegExp
+): { from: number; to: number } | null {
+  const textBefore = doc.slice(0, pos);
+  const match = textBefore.match(pattern);
+
+  if (!match || match.index === undefined || match[0].length === 0) {
+    return null;
+  }
+
+  return { from: pos - match[0].length, to: pos };
+}
+
+export function findCompletionRange(
+  state: EditorState
+): { from: number; to: number } | null {
+  const tree = syntaxTree(state);
+  const pos = state.selection.main.head;
+  const nodeBefore = tree.resolveInner(pos, -1);
+
+  const inValue = /^(Value|String|Int|Boolean|BareValue)$/.test(nodeBefore.type.name);
+  if (inValue) {
+    return null;
+  }
+
+  const pluginNode = findPluginNode(tree.topNode);
+  const doc = state.doc.toString();
+
+  if (!pluginNode || nodeBefore.type.name === "PluginClass" || pos <= pluginNode.to) {
+    return matchBefore(doc, pos, /[A-Za-z0-9_.]*$/);
+  }
+
+  return matchBefore(doc, pos, /[A-Za-z_][A-Za-z0-9_]*$/);
 }
 
 export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) {
