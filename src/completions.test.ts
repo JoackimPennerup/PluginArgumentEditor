@@ -53,11 +53,16 @@ describe("plugin completions", () => {
     expect(alphaCompletion?.apply).toBe("Alpha=");
   });
 
-  it("keeps showing argument suggestions after selecting an argument name", () => {
-    const context = buildContext(`${pluginName} Alpha=`);
-    const result = completionSource(context);
+  it("closes suggestions while entering a value and reopens after leaving it", () => {
+    const duringValueContext = buildContext(`${pluginName} Alpha=`);
+    const duringValueResult = completionSource(duringValueContext);
 
-    expect(result?.options.map((option) => option.label)).toContain("Beta");
-    expect(result?.options.map((option) => option.label)).not.toContain("Alpha");
+    expect(duringValueResult).toBeNull();
+
+    const afterValueContext = buildContext(`${pluginName} Alpha=1 `);
+    const afterValueResult = completionSource(afterValueContext);
+
+    expect(afterValueResult?.options.map((option) => option.label)).toContain("Beta");
+    expect(afterValueResult?.options.map((option) => option.label)).not.toContain("Alpha");
   });
 });

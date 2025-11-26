@@ -41,23 +41,19 @@ function isInValue(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
 function inArgValueZone(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
   // If the cursor is inside an Arg node but past the ArgName, treat it as value space
   // so completions close when "=" is typed or while editing a value.
-  let node: SyntaxNode | null = tree.resolveInner(pos, 1);
+  for (const bias of [-1, 1]) {
+    let node: SyntaxNode | null = tree.resolveInner(pos, bias);
 
-  while (node) {
-    if (node.type.name === "Arg") {
-      const nameNode = node.getChild("ArgName");
-      const valueNode = node.getChild("Value");
-      if (!nameNode) {
-        return true;
+    while (node) {
+      if (node.type.name === "Arg") {
+        const nameNode = node.getChild("ArgName");
+        if (!nameNode) {
+          return true;
+        }
+        return pos > nameNode.to;
       }
-      // Keep suggesting arguments when no value has been provided yet so the user can
-      // immediately switch to a different argument after accepting a completion.
-      if (!valueNode || valueNode.from === valueNode.to) {
-        return false;
-      }
-      return pos > nameNode.to;
+      node = node.parent;
     }
-    node = node.parent;
   }
 
   return false;
