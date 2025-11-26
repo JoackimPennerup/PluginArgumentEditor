@@ -5,3 +5,4 @@
 - Autocompletion in `src/completions.ts` only suggests arguments after a valid plugin name has been typed; plugin name completion was removed to mirror server constraints.
 - Linting and completion both call `requestPluginByName` to mimic the round-trip and share cached argument metadata.
 - Vite's dev server is configured to use polling (`vite.config.ts`) so edits inside containers still trigger reloads; keep that in mind if adjusting the dev setup.
+- Linting now also warns when an argument name is present without a value to align with server-side validation behavior.

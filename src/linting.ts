@@ -133,7 +133,18 @@ export function createPluginConfigLinter(resolvePlugin: PluginResolver = request
         });
       }
 
-      const valueText = valueNode ? readNodeText(valueNode, doc) : "";
+      if (!valueNode) {
+        // Warn when an argument name is provided without any value token following it.
+        diagnostics.push({
+          from: nameNode.from,
+          to: nameNode.to,
+          message: `Argument '${lookup.canonical}' is missing a value.`,
+          severity: "warning"
+        });
+        continue;
+      }
+
+      const valueText = readNodeText(valueNode, doc);
       const typeError = validateArgument(lookup.canonical, valueText, lookup.def);
 
       if (typeError === "error") {
