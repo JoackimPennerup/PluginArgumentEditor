@@ -55,14 +55,14 @@ function pluginLinter(topLevelKey: string) {
   const pluginMap = getPluginMapForTopLevel(topLevelKey);
   return createPluginConfigLinter(pluginMap);
 }
-/*
 function pluginCompletion(topLevelKey: string) {
   const pluginMap = getPluginMapForTopLevel(topLevelKey);
   return autocompletion({
     override: [pluginConfigCompletionSource(pluginMap)],
-    activateOnTyping: true
+    activateOnTyping: true,
+    closeOnPick: false
   });
-}*/
+}
 
 function triggerCompletionIfFocused() {
   if (!view.hasFocus) {

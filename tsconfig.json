@@ -9,7 +9,7 @@
     "jsx": "preserve",
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
-    "types": ["vite/client"]
+    "types": ["vite/client", "vitest"]
   },
   "include": ["src/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]

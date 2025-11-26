@@ -46,8 +46,14 @@ function inArgValueZone(tree: ReturnType<typeof syntaxTree>, pos: number): boole
   while (node) {
     if (node.type.name === "Arg") {
       const nameNode = node.getChild("ArgName");
+      const valueNode = node.getChild("Value");
       if (!nameNode) {
         return true;
+      }
+      // Keep suggesting arguments when no value has been provided yet so the user can
+      // immediately switch to a different argument after accepting a completion.
+      if (!valueNode || valueNode.from === valueNode.to) {
+        return false;
       }
       return pos > nameNode.to;
     }
@@ -193,10 +199,7 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     const targetNode = findNameNode(tree, context.pos);
 
     const pluginMatch = context.matchBefore(/[A-Za-z0-9_.]*/);
-    const pluginMode =
-      !pluginNode ||
-      targetNode?.type.name === "PluginClass" ||
-      context.pos <= pluginNode.to;
+    const pluginMode = !pluginNode || context.pos <= pluginNode.to;
 
     if (pluginMode) {
       return {
