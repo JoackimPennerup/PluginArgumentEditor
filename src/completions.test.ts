@@ -65,4 +65,12 @@ describe("plugin completions", () => {
     expect(afterValueResult?.options.map((option) => option.label)).toContain("Beta");
     expect(afterValueResult?.options.map((option) => option.label)).not.toContain("Alpha");
   });
+
+  it("shows suggestions again after selecting an argument without entering a value", () => {
+    const context = buildContext(`${pluginName} Alpha= `);
+    const result = completionSource(context);
+
+    expect(result?.options.map((option) => option.label)).toContain("Beta");
+    expect(result?.options.map((option) => option.label)).not.toContain("Alpha");
+  });
 });

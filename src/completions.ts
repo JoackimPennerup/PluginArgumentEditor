@@ -24,6 +24,22 @@ function isValueNode(node: SyntaxNode | null): boolean {
   return !!node && valueNodeNames.has(node.type.name);
 }
 
+function findValueChild(node: SyntaxNode | null): SyntaxNode | null {
+  if (!node) return null;
+
+  let child: SyntaxNode | null = node.firstChild;
+
+  while (child) {
+    if (isValueNode(child)) {
+      return child;
+    }
+
+    child = child.nextSibling;
+  }
+
+  return null;
+}
+
 // Blocks completions when the caret sits inside a value token (not at its edges).
 function isInValue(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
   const isInside = (node: SyntaxNode | null) =>
@@ -37,8 +53,9 @@ function isInValue(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
   return isInside(nodeBefore) || isInside(nodeAfter);
 }
 
-// Treats everything after the ArgName inside an Arg as value space (closes completions after "=").
-function inArgValueZone(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
+// Treats everything after the ArgName inside an Arg as value space (closes completions after "=")
+// unless the caret sits in trailing whitespace before a value has been entered.
+function inArgValueZone(tree: ReturnType<typeof syntaxTree>, doc: string, pos: number): boolean {
   // If the cursor is inside an Arg node but past the ArgName, treat it as value space
   // so completions close when "=" is typed or while editing a value.
   for (const bias of [-1, 1]) {
@@ -50,6 +67,23 @@ function inArgValueZone(tree: ReturnType<typeof syntaxTree>, pos: number): boole
         if (!nameNode) {
           return true;
         }
+
+        const valueNode = findValueChild(node);
+        const afterNameText = doc.slice(nameNode.to, pos);
+        const hasValueCharacters = /[^=\s]/.test(afterNameText);
+
+        // If no value has been entered yet (only whitespace or the equals sign)
+        // and the cursor has moved into trailing whitespace, keep completions
+        // available so another argument can be picked.
+        if (!valueNode && !hasValueCharacters && /\s$/.test(afterNameText)) {
+          return false;
+        }
+
+        if (valueNode && pos > valueNode.to) {
+          const afterValueText = doc.slice(valueNode.to, pos);
+          return /\S/.test(afterValueText);
+        }
+
         return pos > nameNode.to;
       }
       node = node.parent;
@@ -161,8 +195,9 @@ export function findCompletionRange(
 ): { from: number; to: number } | null {
   const tree = syntaxTree(state);
   const pos = state.selection.main.head;
+  const doc = state.doc.toString();
 
-  if (isInValue(tree, pos) || inArgValueZone(tree, pos)) {
+  if (isInValue(tree, pos) || inArgValueZone(tree, doc, pos)) {
     return null;
   }
 
@@ -171,8 +206,6 @@ export function findCompletionRange(
   if (!targetNode) {
     return null;
   }
-
-  const doc = state.doc.toString();
 
   return targetNode.type.name === "PluginClass"
     ? matchBefore(doc, pos, /[A-Za-z0-9_.]*$/)
@@ -188,7 +221,7 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     const doc = context.state.doc.toString();
     const pluginNode = findPluginNode(tree.topNode);
 
-    if (isInValue(tree, context.pos) || inArgValueZone(tree, context.pos)) {
+    if (isInValue(tree, context.pos) || inArgValueZone(tree, doc, context.pos)) {
       return null;
     }
 
