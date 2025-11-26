@@ -33,7 +33,7 @@ function buildPluginsByName(source: PluginRegistry): Map<string, PluginDef> {
 
   for (const pluginList of Object.values(source)) {
     for (const plugin of pluginList) {
-      map.set(plugin.name, plugin as PluginDef);
+      map.set(plugin.name, plugin);
     }
   }
 

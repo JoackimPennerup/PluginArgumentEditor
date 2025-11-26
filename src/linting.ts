@@ -7,6 +7,10 @@ interface PluginResolver {
   (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
 }
 
+interface PluginResolver {
+  (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
+}
+
 function walkTree(cursor: TreeCursor, visit: (cursor: TreeCursor) => void) {
   for (;;) {
     visit(cursor);
