@@ -2,7 +2,7 @@ import { Completion, CompletionContext } from "@codemirror/autocomplete";
 import { EditorState } from "@codemirror/state";
 import { syntaxTree } from "@codemirror/language";
 import { SyntaxNode, TreeCursor } from "@lezer/common";
-import { PluginDef } from "./pluginRegistry";
+import { PluginDef, isValidPluginClassName, requestPluginByName } from "./pluginService";
 
 function walkTree(cursor: TreeCursor, visit: (cursor: TreeCursor) => void) {
   for (;;) {
@@ -107,17 +107,6 @@ function collectArgs(tree: SyntaxNode, doc: string): string[] {
   return args;
 }
 
-// Builds completion options for plugins.
-function buildPluginOptions(pluginMap: Map<string, PluginDef>): Completion[] {
-  return Array.from(pluginMap.values()).map((plugin) => ({
-    label: plugin.name,
-    type: "class",
-    detail: "Plugin",
-    info: plugin.description,
-    apply: plugin.name + " "
-  }));
-}
-
 // Builds completion options for arguments, filtering non-multivalued duplicates.
 function buildArgOptions(plugin: PluginDef, seenArgs: string[]): Completion[] {
   const seen = new Map<string, number>();
@@ -153,7 +142,9 @@ function matchBefore(
   return { from: pos - match[0].length, to: pos };
 }
 
-// Computes what range to select before triggering a completion popup.
+/**
+ * Determines the text range that should be selected when triggering completions.
+ */
 export function findCompletionRange(
   state: EditorState
 ): { from: number; to: number } | null {
@@ -161,6 +152,7 @@ export function findCompletionRange(
   const pos = state.selection.main.head;
 
   if (isInValue(tree, pos) || inArgValueZone(tree, pos)) {
+    // Avoid selecting ranges when the caret is inside an argument value.
     return null;
   }
 
@@ -170,46 +162,49 @@ export function findCompletionRange(
     return null;
   }
 
+  if (targetNode.type.name === "PluginClass") {
+    // Plugin names are typed manually, so do not try to drive completions for them.
+    return null;
+  }
+
   const doc = state.doc.toString();
 
-  return targetNode.type.name === "PluginClass"
-    ? matchBefore(doc, pos, /[A-Za-z0-9_.]*$/)
-    : matchBefore(doc, pos, /[A-Za-z_][A-Za-z0-9_]*$/);
+  return matchBefore(doc, pos, /[A-Za-z_][A-Za-z0-9_]*$/);
 }
 
-// Completion source that switches between plugin suggestions and argument suggestions.
-export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) {
-  const pluginOptions = buildPluginOptions(pluginMap);
-
-  return (context: CompletionContext) => {
+/**
+ * Builds a completion source that loads argument suggestions from the plugin service.
+ */
+export function pluginConfigCompletionSource(topLevelKey: string) {
+  return async (context: CompletionContext) => {
     const tree = syntaxTree(context.state);
     const doc = context.state.doc.toString();
     const pluginNode = findPluginNode(tree.topNode);
 
     if (isInValue(tree, context.pos) || inArgValueZone(tree, context.pos)) {
+      // Completions should not appear inside argument values.
       return null;
     }
 
+    // Without a plugin class there is no target to resolve argument definitions from.
     const targetNode = findNameNode(tree, context.pos);
 
-    const pluginMatch = context.matchBefore(/[A-Za-z0-9_.]*/);
-    const pluginMode =
-      !pluginNode ||
-      targetNode?.type.name === "PluginClass" ||
-      context.pos <= pluginNode.to;
-
-    if (pluginMode) {
-      return {
-        from: pluginMatch?.from ?? context.pos,
-        options: pluginOptions,
-        validFor: /[A-Za-z0-9_.]*/
-      };
+    if (!pluginNode || !targetNode || context.pos <= pluginNode.to) {
+      // Plugin arguments can only be suggested after the plugin has been specified.
+      return null;
     }
 
     const pluginName = readNodeText(pluginNode, doc);
-    const pluginDef = pluginMap.get(pluginName);
+
+    if (!isValidPluginClassName(pluginName)) {
+      // Skip remote lookups until the classpath format is valid.
+      return null;
+    }
+
+    const pluginDef = await requestPluginByName(pluginName, topLevelKey);
 
     if (!pluginDef) {
+      // Without a resolved plugin there are no argument definitions to suggest.
       return null;
     }
 
