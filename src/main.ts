@@ -1,4 +1,4 @@
-import { basicSetup, EditorView } from "codemirror";
+import { minimalSetup, EditorView } from "codemirror";
 import { EditorState, Compartment } from "@codemirror/state";
 import { autocompletion, startCompletion } from "@codemirror/autocomplete";
 import { pluginConfigLanguage } from "./pluginConfigLanguage";
@@ -55,14 +55,14 @@ function pluginLinter(topLevelKey: string) {
   const pluginMap = getPluginMapForTopLevel(topLevelKey);
   return createPluginConfigLinter(pluginMap);
 }
-
+/*
 function pluginCompletion(topLevelKey: string) {
   const pluginMap = getPluginMapForTopLevel(topLevelKey);
   return autocompletion({
     override: [pluginConfigCompletionSource(pluginMap)],
     activateOnTyping: true
   });
-}
+}*/
 
 function triggerCompletionIfFocused() {
   if (!view.hasFocus) {
@@ -81,7 +81,7 @@ function triggerCompletionIfFocused() {
 const state = EditorState.create({
   doc: initialConfig,
   extensions: [
-    basicSetup,
+    minimalSetup,
     pluginConfigLanguage,
     linterCompartment.of(pluginLinter(defaultTopLevel)),
     completionCompartment.of(pluginCompletion(defaultTopLevel)),

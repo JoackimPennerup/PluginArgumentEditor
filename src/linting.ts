@@ -90,7 +90,7 @@ export function createPluginConfigLinter(
       diagnostics.push({
         from: pluginNode.from,
         to: pluginNode.to,
-        message: `Unknown plugin: ${pluginName} (not found in registry).`,
+        message: `Unknown plugin: ${pluginName} (not found in classpath).`,
         severity: "warning"
       });
       return diagnostics;

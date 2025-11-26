@@ -18,6 +18,66 @@ function readNodeText(node: SyntaxNode, doc: string): string {
   return doc.slice(node.from, node.to);
 }
 
+const valueNodeNames = new Set(["Value", "String", "Int", "Boolean", "BareValue"]);
+
+function isValueNode(node: SyntaxNode | null): boolean {
+  return !!node && valueNodeNames.has(node.type.name);
+}
+
+// Blocks completions when the caret sits inside a value token (not at its edges).
+function isInValue(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
+  const isInside = (node: SyntaxNode | null) =>
+    isValueNode(node) && node.from < pos && pos < node.to;
+
+  const nodeBefore = tree.resolveInner(pos, -1);
+  const nodeAfter = tree.resolveInner(pos, 1);
+
+  // Only block when the cursor is strictly inside a value token; allow boundaries so whitespace
+  // right after a value can trigger the next completion.
+  return isInside(nodeBefore) || isInside(nodeAfter);
+}
+
+// Treats everything after the ArgName inside an Arg as value space (closes completions after "=").
+function inArgValueZone(tree: ReturnType<typeof syntaxTree>, pos: number): boolean {
+  // If the cursor is inside an Arg node but past the ArgName, treat it as value space
+  // so completions close when "=" is typed or while editing a value.
+  let node: SyntaxNode | null = tree.resolveInner(pos, 1);
+
+  while (node) {
+    if (node.type.name === "Arg") {
+      const nameNode = node.getChild("ArgName");
+      if (!nameNode) {
+        return true;
+      }
+      return pos > nameNode.to;
+    }
+    node = node.parent;
+  }
+
+  return false;
+}
+
+// Finds the nearest name-bearing node (plugin class or arg name) around the caret.
+function findNameNode(
+  tree: ReturnType<typeof syntaxTree>,
+  pos: number
+): SyntaxNode | null {
+  for (const bias of [-1, 1]) {
+    let node: SyntaxNode | null = tree.resolveInner(pos, bias);
+
+    while (node) {
+      if (node.type.name === "PluginClass" || node.type.name === "ArgName") {
+        return node;
+      }
+
+      node = node.parent;
+    }
+  }
+
+  return null;
+}
+
+// Returns the first plugin node in the document, if any.
 function findPluginNode(tree: SyntaxNode): SyntaxNode | null {
   let pluginNode: SyntaxNode | null = null;
 
@@ -30,6 +90,7 @@ function findPluginNode(tree: SyntaxNode): SyntaxNode | null {
   return pluginNode;
 }
 
+// Collects argument names that already appear, preserving original casing.
 function collectArgs(tree: SyntaxNode, doc: string): string[] {
   const args: string[] = [];
 
@@ -46,15 +107,18 @@ function collectArgs(tree: SyntaxNode, doc: string): string[] {
   return args;
 }
 
+// Builds completion options for plugins.
 function buildPluginOptions(pluginMap: Map<string, PluginDef>): Completion[] {
   return Array.from(pluginMap.values()).map((plugin) => ({
     label: plugin.name,
     type: "class",
     detail: "Plugin",
-    info: plugin.description
+    info: plugin.description,
+    apply: plugin.name + " "
   }));
 }
 
+// Builds completion options for arguments, filtering non-multivalued duplicates.
 function buildArgOptions(plugin: PluginDef, seenArgs: string[]): Completion[] {
   const seen = new Map<string, number>();
 
@@ -69,7 +133,8 @@ function buildArgOptions(plugin: PluginDef, seenArgs: string[]): Completion[] {
       label: key,
       type: "property",
       detail: def.type,
-      info: def.description
+      info: def.description,
+      apply: key + "="
     }));
 }
 
@@ -88,28 +153,31 @@ function matchBefore(
   return { from: pos - match[0].length, to: pos };
 }
 
+// Computes what range to select before triggering a completion popup.
 export function findCompletionRange(
   state: EditorState
 ): { from: number; to: number } | null {
   const tree = syntaxTree(state);
   const pos = state.selection.main.head;
-  const nodeBefore = tree.resolveInner(pos, -1);
 
-  const inValue = /^(Value|String|Int|Boolean|BareValue)$/.test(nodeBefore.type.name);
-  if (inValue) {
+  if (isInValue(tree, pos) || inArgValueZone(tree, pos)) {
     return null;
   }
 
-  const pluginNode = findPluginNode(tree.topNode);
-  const doc = state.doc.toString();
+  const targetNode = findNameNode(tree, pos);
 
-  if (!pluginNode || nodeBefore.type.name === "PluginClass" || pos <= pluginNode.to) {
-    return matchBefore(doc, pos, /[A-Za-z0-9_.]*$/);
+  if (!targetNode) {
+    return null;
   }
 
-  return matchBefore(doc, pos, /[A-Za-z_][A-Za-z0-9_]*$/);
+  const doc = state.doc.toString();
+
+  return targetNode.type.name === "PluginClass"
+    ? matchBefore(doc, pos, /[A-Za-z0-9_.]*$/)
+    : matchBefore(doc, pos, /[A-Za-z_][A-Za-z0-9_]*$/);
 }
 
+// Completion source that switches between plugin suggestions and argument suggestions.
 export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) {
   const pluginOptions = buildPluginOptions(pluginMap);
 
@@ -117,20 +185,20 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     const tree = syntaxTree(context.state);
     const doc = context.state.doc.toString();
     const pluginNode = findPluginNode(tree.topNode);
-    const nodeBefore = tree.resolveInner(context.pos, -1);
 
-    const inValue = /^(Value|String|Int|Boolean|BareValue)$/.test(nodeBefore.type.name);
-    if (inValue) {
+    if (isInValue(tree, context.pos) || inArgValueZone(tree, context.pos)) {
       return null;
     }
 
+    const targetNode = findNameNode(tree, context.pos);
+
     const pluginMatch = context.matchBefore(/[A-Za-z0-9_.]*/);
+    const pluginMode =
+      !pluginNode ||
+      targetNode?.type.name === "PluginClass" ||
+      context.pos <= pluginNode.to;
 
-    if (!pluginNode || nodeBefore.type.name === "PluginClass" || context.pos <= pluginNode.to) {
-      if (!pluginMatch && !context.explicit) {
-        return null;
-      }
-
+    if (pluginMode) {
       return {
         from: pluginMatch?.from ?? context.pos,
         options: pluginOptions,
@@ -146,17 +214,13 @@ export function pluginConfigCompletionSource(pluginMap: Map<string, PluginDef>) 
     }
 
     const argMatch = context.matchBefore(/[A-Za-z_][A-Za-z0-9_]*/);
-    const allowEmptyArg = context.explicit || !!argMatch;
-
-    if (!allowEmptyArg) {
-      return null;
-    }
+    const from = argMatch?.from ?? context.pos;
 
     const seenArgs = collectArgs(tree.topNode, doc);
     const argOptions = buildArgOptions(pluginDef, seenArgs);
 
     return {
-      from: argMatch?.from ?? context.pos,
+      from,
       options: argOptions,
       validFor: /[A-Za-z_][A-Za-z0-9_]*/
     };
