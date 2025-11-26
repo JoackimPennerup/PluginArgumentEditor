@@ -1,7 +1,11 @@
 import { Diagnostic, linter } from "@codemirror/lint";
 import { syntaxTree } from "@codemirror/language";
 import { SyntaxNode, TreeCursor } from "@lezer/common";
-import { pluginsByName, PluginDef } from "./pluginRegistry";
+import { PluginDef, pluginsByName } from "./pluginRegistry";
+
+interface PluginResolver {
+  (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
+}
 
 interface PluginResolver {
   (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
@@ -49,8 +53,13 @@ function validateArgument(
 }
 
 export function createPluginConfigLinter(
-  resolvePlugin: PluginResolver = (name) => pluginsByName.get(name) ?? null
+  resolvePlugin: PluginResolver | Map<string, PluginDef> = (name) => pluginsByName.get(name) ?? null
 ) {
+  const resolver: PluginResolver =
+    resolvePlugin instanceof Map
+      ? (name) => resolvePlugin.get(name) ?? null
+      : resolvePlugin;
+
   return linter(async (view) => {
     const diagnostics: Diagnostic[] = [];
     const tree = syntaxTree(view.state);
@@ -79,13 +88,13 @@ export function createPluginConfigLinter(
     }
 
     const pluginName = readNodeText(pluginNode, doc);
-    const pluginDef = await resolvePlugin(pluginName);
+    const pluginDef = await resolver(pluginName);
 
     if (!pluginDef) {
       diagnostics.push({
         from: pluginNode.from,
         to: pluginNode.to,
-        message: `Unknown plugin: ${pluginName} (not found in registry).`,
+        message: `Unknown plugin: ${pluginName} (not found in classpath).`,
         severity: "warning"
       });
       return diagnostics;

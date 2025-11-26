@@ -1,25 +1,1088 @@
 {
-  "iipax.generic.plugin.broker.PushPlugin": [
-    {
-      "name": "iipax.service.brokerkernel.plugin.MailPushPlugin",
-      "description": "Sends broker messages as e-mails synchronously.",
-      "arguments": {
-        "SmtpHost": { "type": "string" },
-        "SmtpPort": { "type": "int" },
-        "FromEmailAddress": { "type": "string" },
-        "ToEmailAddress": { "type": "string" },
-        "Attachment": { "type": "int", "multivalued": true }
-      }
-    }
-  ],
-  "iipax.generic.plugin.broker.SynchronousPlugin": [
-    {
-      "name": "iipax.business.iinsight.brokerplugin.MessagePushPlugin",
-      "arguments": {
-        "JournalIdMinLength": { "type": "int" },
-        "JournalIdRegExp": { "type": "string" },
-        "Partition": { "type": "string" }
-      }
-    }
-  ]
+    "iipax.generic.plugin.broker.PushPlugin": [
+        {
+            "name": "iipax.business.iinsight.brokerplugin.MessagePushPlugin",
+            "arguments": {
+                "Partition": {
+                    "type": "string"
+                },
+                "JournalIdMinLength": {
+                    "type": "int"
+                },
+                "JournalIdRegExp": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.jmsgw.JmsGatewayPushPlugin",
+            "description": "shs plugin used to push messages. Messages are pushed to JMS-queue determined by RTL-configuration. Only messages containing one datapart is supported. If message should not be of default JMS style a plugin to format JMS-message can be configured in RTL.",
+            "arguments": {
+                "JndiOutgoingQueue": {
+                    "type": "string"
+                },
+                "JndiQueueFactory": {
+                    "type": "string"
+                },
+                "FormatPlugin": {
+                    "type": "string"
+                },
+                "UseTextMessage": {
+                    "type": "string"
+                },
+                "UseTextMessageForTextContent": {
+                    "type": "string"
+                },
+                "RefreshQueueFactory": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.LtaPushPlugin",
+            "description": "Plugin used to archive SIP's in the LTA. Only supports ancient way of LTA communication, i e message should contain a single data part that uses multi part mime format with SIP label in the first position, followed by the associated files."
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws.OrderDipPushPlugin",
+            "description": "This is the web-service endpoint for the OrderDIP operation, implemented as a push plugin."
+        },
+        {
+            "name": "iipax.service.brokerkernel.fileintegration.plugin.PushToFileSystem",
+            "description": "The push to filesystem plugin.",
+            "arguments": {
+                "Path": {
+                    "type": "string"
+                },
+                "Structure": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.fileintegration.plugin.PushToFtp",
+            "description": "Push plugin that transfers the data parts of a message to an FTP server.",
+            "arguments": {
+                "Dir": {
+                    "type": "string",
+                    "description": "Target path at the FTP server. Must already exist. This string may contain any acronyms handled by <code>AcronymSubstitutor</code>. Default value: . (ie current directory)."
+                },
+                "Mkdir": {
+                    "type": "string",
+                    "description": "Target path to create at the FTP server. This string may contain any acronyms handled by <code>AcronymSubstitutor</code>. Note that if <code>setDir</code> is also used, <code>mkdir</code> is considered relative to that value. Empty by default."
+                },
+                "Host": {
+                    "type": "string",
+                    "description": "Host address. Required value."
+                },
+                "Port": {
+                    "type": "int",
+                    "description": "The port to set."
+                },
+                "Mode": {
+                    "type": "string",
+                    "description": "Connection mode. Valid values: active, passive. Default value: active."
+                },
+                "Pwd": {
+                    "type": "string",
+                    "description": "Login password. Empty by default."
+                },
+                "Type": {
+                    "type": "string",
+                    "description": "File transfer type. Valid values: binary, ascii. Default value: binary."
+                },
+                "User": {
+                    "type": "string",
+                    "description": "Login username. Default value: anonymous."
+                },
+                "File": {
+                    "type": "string",
+                    "description": "File name pattern. This string may contain any acronyms handled by <code>AcronymSubstitutor</code>, in addition to these also allows %DP and %OF for data part number and original file name. Default value: %OF."
+                },
+                "SiteCommand": {
+                    "type": "string",
+                    "description": "Optional list of site (server) specific commands that should be invoked before the file(s) are transferred. Each command must be separated with the # character. Example:<code>umask 000#help</code>"
+                },
+                "Unique": {
+                    "type": "string",
+                    "description": "If true, existing files on the server will not be overwritten. In these cases, the new file gets a unique file name, decided by the receiving ftp server."
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.fileintegration.plugin.PushToVfs",
+            "description": "Push plugin that stores the dataparts of a message to a file system. The destination URI is parsed by {@link AcronymSubstitutor} so supported acronyms will be expanded.",
+            "arguments": {
+                "HostKeyChecking": {
+                    "type": "boolean"
+                },
+                "KnownHostFilePath": {
+                    "type": "string"
+                },
+                "PrivateKeyFilePath": {
+                    "type": "string"
+                },
+                "SendLabel": {
+                    "type": "boolean",
+                    "description": "Sets the setSendLabel, default is true"
+                },
+                "Uri": {
+                    "type": "string",
+                    "description": "The URI where the data parts will be pushed to."
+                },
+                "Mode": {
+                    "type": "string",
+                    "description": "Can be passive or active."
+                },
+                "Binary": {
+                    "type": "boolean",
+                    "description": "true for binary, false for ASCII"
+                },
+                "Decrypt": {
+                    "type": "boolean",
+                    "description": "Specifies whether encrypted dataparts should be decrypted or not. Optional, if not specified, encrypted dataparts will be decrypted."
+                },
+                "File": {
+                    "type": "string",
+                    "description": "File name pattern. This string may contain any acronyms handled by <code>AcronymSubstitutor</code>, in addition to these also allows %DP and %OF for data part number and original file name. Default value: %OF."
+                },
+                "UserDirIsRoot": {
+                    "type": "boolean",
+                    "description": "true if the user directory is the root directory"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.iip.test.TestPushPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.FtpPushPlugin",
+            "description": "Push plugin that writes data parts to an FTP server.",
+            "arguments": {
+                "Host": {
+                    "type": "string",
+                    "description": "the address of the FTP server."
+                },
+                "User": {
+                    "type": "string",
+                    "description": "the user name to connect as."
+                },
+                "Pwd": {
+                    "type": "string",
+                    "description": "the password of the user to connect as."
+                },
+                "Account": {
+                    "type": "string",
+                    "description": "the account to use."
+                },
+                "Dir": {
+                    "type": "string",
+                    "description": "the remote directory to transfer files to."
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.MailPushPlugin",
+            "arguments": {
+                "DataPart": {
+                    "type": "int",
+                    "description": "The dataPart to set."
+                },
+                "FromEmailAddress": {
+                    "type": "string",
+                    "description": "The fromEmailAddress to set."
+                },
+                "Password": {
+                    "type": "string",
+                    "description": "The password to set."
+                },
+                "SmtpHost": {
+                    "type": "string",
+                    "description": "The smtpHost to set."
+                },
+                "SmtpPort": {
+                    "type": "int"
+                },
+                "Subject": {
+                    "type": "string",
+                    "description": "The subject to set."
+                },
+                "ToEmailAddress": {
+                    "type": "string",
+                    "description": "The toEmailAddress to set."
+                },
+                "UserName": {
+                    "type": "string",
+                    "description": "The userName to set."
+                },
+                "AttachmentDataPartType": {
+                    "type": "string",
+                    "description": "The attachmentDataPartType to set."
+                },
+                "Attachment": {
+                    "type": "int",
+                    "multivalued": true
+                },
+                "Timeout": {
+                    "type": "int"
+                },
+                "Protocol": {
+                    "type": "string"
+                },
+                "EnableStartTLS": {
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.WebServicePushPlugin",
+            "description": "Plugin that calls a web service. If the message has more than one data part, the XOP format will be used, otherwise an ordinary SOAP Envelope is created. An SSEK header can be included by setting the parameter includeSsekHeader to true. Example: iipax.service.brokerkernel.plugin.WebServicePushPlugin url=http://foo.com/service123 includeSsekHeader=true soapVersion=1.1",
+            "arguments": {
+                "Url": {
+                    "type": "string"
+                },
+                "SoapAction": {
+                    "type": "string"
+                },
+                "SoapVersion": {
+                    "type": "string"
+                },
+                "IncludeSsekHeader": {
+                    "type": "string"
+                },
+                "IncludeIipHeader": {
+                    "type": "string"
+                },
+                "IncludeShs2Header": {
+                    "type": "string"
+                },
+                "Response": {
+                    "type": "string"
+                },
+                "Timeout": {
+                    "type": "int",
+                    "description": "timeout in seconds"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.TestPushPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.shs2.test.TestPushPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.AssertMessageContainsStringPlugin",
+            "arguments": {
+                "String": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.EchoPushPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestPushNewPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestPushPlugin"
+        },
+        {
+            "name": "iipax.service.shsbroker.plugin.DurationLogPushPlugin",
+            "arguments": {
+                "LogName": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.shsbroker.plugin.ShsSendPushPlugin",
+            "arguments": {
+                "Product": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.shsbroker.test.util.TestPushPlugin"
+        }
+    ],
+    "iipax.generic.plugin.broker.OnlinePlugin": [
+        {
+            "name": "iipax.business.jmsgw.JmsGatewayOnlinePlugin",
+            "description": "The JmsGatewayOnlinePlugin is an shs-plugin used to handle synchronous requests. Synchronous requests are put on an JMS-queue. The plugin will then poll another queue for replies. A reply must contain the same correlation id as the request. The reply is then returned to the shs. The online-plugin itself can execute plugins to read and write JMS-messages. Even if not standard JMS-messages is used, the JMS-property correlation id must be set! <b>Only replies with correct correlation id property will be fetched from reply queue!</b>",
+            "arguments": {
+                "JndiQueueFactory": {
+                    "type": "string"
+                },
+                "JndiRequestQueue": {
+                    "type": "string"
+                },
+                "JndiReplyQueue": {
+                    "type": "string"
+                },
+                "TimeOut": {
+                    "type": "string"
+                },
+                "RequestFormatPlugin": {
+                    "type": "string"
+                },
+                "ReplyFormatPlugin": {
+                    "type": "string"
+                },
+                "UseTextMessage": {
+                    "type": "string"
+                },
+                "RefreshQueueFactory": {
+                    "type": "string"
+                },
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.shswebservice.test.utils.WebServiceBigPlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.shswebservice.test.utils.WebServiceTestPlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.FileDownloadOnlinePlugin",
+            "description": "Synchronous plugin to download the attached file from MTS using transaction id. It also changes the status of the message to \"levererad\" by fetching it. Send HTTP GET to http://[rest.mt.url]/auto/[tx-id]/[file name] The chosen file name will not affect the behaviour of this plugin. It's purpose is to allow external tools to save the file with the name used. Path 'auto' is configurable with setPathName.",
+            "arguments": {
+                "PathName": {
+                    "type": "string",
+                    "description": "of the service"
+                },
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.ListFileNamesOnlinePlugin",
+            "description": "Synchronous plugin to return transaction id's and filenames from MTS with the specified product type and the current receiver. Only returns messages with status \"färdig\" if includeDelivered is not configured. Call with http://[rest.mt.url]/auto/rest/[product id]?getfilenames=true Using getfilenames=false or no query at all returns a list of txId without the filenames.",
+            "arguments": {
+                "PathName": {
+                    "type": "string"
+                },
+                "IncludeDelivered": {
+                    "type": "boolean"
+                },
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.XmlSchemaValidateOnlinePlugin",
+            "description": "Online plugin that validates the input against an XML Schema. If the input passes the validation, the specified online plugin is called.",
+            "arguments": {
+                "Plugin": {
+                    "type": "string"
+                },
+                "SchemaPath": {
+                    "type": "string",
+                    "multivalued": true
+                },
+                "SchemaNS": {
+                    "type": "string",
+                    "multivalued": true
+                },
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.CustomErrorOnlinePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                },
+                "Fail": {
+                    "type": "int",
+                    "description": "the failure strategy"
+                },
+                "Status": {
+                    "type": "int",
+                    "description": "the HTTP status"
+                },
+                "JsonKey": {
+                    "type": "string",
+                    "description": "Sets the text to write to the out stream. should be in json format to match the Content-Type used by the plugin. If not set then no text will be written",
+                    "multivalued": true
+                },
+                "JsonValue": {
+                    "type": "string",
+                    "multivalued": true
+                },
+                "FaultDetail": {
+                    "type": "string"
+                },
+                "FaultCode": {
+                    "type": "string"
+                },
+                "FaultString": {
+                    "type": "string"
+                },
+                "HttpServletResponse": {
+                    "type": "HttpServletResponse"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.TestOnlinePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.AuthenticatedOnlinePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.FailOnlinePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.OnlineAwarePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                },
+                "Certificate": {
+                    "type": "X509Certificate"
+                },
+                "IpAddress": {
+                    "type": "string"
+                },
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.OnlineSsekPlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestPlugin",
+            "arguments": {
+                "Repeat": {
+                    "type": "string"
+                },
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.WebServiceTestPlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.shsbroker.plugin.ForwardingOnlinePlugin",
+            "description": "Forwards a message to another node.",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                },
+                "Url": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.shsbroker.test.util.SimpleResponseOnlinePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.shsbroker.test.util.ThrowOnlineExceptionOnlinePlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.ssekbroker.plugin.SsekOnlinePlugin",
+            "description": "This broker online plugin can be used for internal delivery of synchronous SSEK-messages.",
+            "arguments": {
+                "Url": {
+                    "type": "string"
+                },
+                "SoapAction": {
+                    "type": "string"
+                },
+                "MimeHeaders": {
+                    "type": "MimeHeaders"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.ssekbroker.test.util.ExceptionThrowingPlugin",
+            "arguments": {
+                "MimeHeaders": {
+                    "type": "MimeHeaders",
+                    "description": "{@inheritDoc}"
+                },
+                "FaultCode": {
+                    "type": "string"
+                },
+                "FaultString": {
+                    "type": "string"
+                }
+            }
+        }
+    ],
+    "iipax.generic.plugin.broker.SynchronousPlugin": [
+        {
+            "name": "iipax.business.lta.plugin.ws.ArchiveSipSynchPlugin",
+            "description": "Plugin used to synchronously archive SIP's in the LTA. Supports the preferred way of LTA communication, i e message should contain SIP label in the first data part, followed by associated files in separate data parts. The SIP label must use xop references to connect file content.",
+            "arguments": {
+                "MarkReadLimit": {
+                    "type": "int",
+                    "description": "the read limit to set"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.ArchiveSipSynchPlugin"
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.CountAipsSynchPlugin",
+            "arguments": {
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.GetAipSynchPlugin",
+            "arguments": {
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.GetChildrenSynchPlugin",
+            "arguments": {
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.GetFileContentSynchPlugin",
+            "arguments": {
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.GetMetaDataSynchPlugin"
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.GetSipStatusSynchPlugin"
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.GetSubmissionAgreementsSynchPlugin"
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.OrderDipSynchPlugin"
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.SearchAipsSynchPlugin",
+            "arguments": {
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws22.GetFileUrlSynchPlugin",
+            "arguments": {
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws22.OrderDipFastSyncPlugin",
+            "description": "This is the web-service endpoint for the OrderDIPFast operation, implemented as a synchronous plugin ({@link SynchronousPlugin}).",
+            "arguments": {
+                "Plugin": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws22.PreprocessSipSynchPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.iip.test.TestNoAttachmentSynchPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.iip.test.TestResponseAwareSynchPlugin",
+            "arguments": {
+                "HttpServletResponse": {
+                    "type": "HttpServletResponse"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.iip.test.TestSynchronousPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.iip.test.TestXmlParserPlugin",
+            "description": "Test plugin that tries to parse to message content as XML."
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.MailSynchPlugin",
+            "description": "Synchronous plugin that sends broker messages as e-mails.",
+            "arguments": {
+                "FromEmailAddress": {
+                    "type": "string",
+                    "description": "The fromEmailAddress to set."
+                },
+                "Password": {
+                    "type": "string",
+                    "description": "The password to set."
+                },
+                "SmtpHost": {
+                    "type": "string",
+                    "description": "The smtpHost to set."
+                },
+                "SmtpPort": {
+                    "type": "int"
+                },
+                "Subject": {
+                    "type": "string",
+                    "description": "The subject to set."
+                },
+                "ToEmailAddress": {
+                    "type": "string",
+                    "description": "The toEmailAddress to set."
+                },
+                "UserName": {
+                    "type": "string",
+                    "description": "The userName to set."
+                },
+                "Timeout": {
+                    "type": "int"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.SynchronousTransformPlugin",
+            "arguments": {
+                "InTemplate": {
+                    "type": "string",
+                    "description": "the template to use"
+                },
+                "OutTemplate": {
+                    "type": "string",
+                    "description": "the template to use"
+                },
+                "UrlSuffix": {
+                    "type": "string",
+                    "description": "A URL suffix."
+                },
+                "HttpServletRequest": {
+                    "type": "HttpServletRequest",
+                    "description": "{@inheritDoc}"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.shs2.test.TestBrokenSynchPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.TestSetLogErrorToMtsSynchPlugin",
+            "arguments": {
+                "LogErrorToMts": {
+                    "type": "boolean"
+                },
+                "TxId": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.ws.security.plugin.GetResourcesPermissionsPlugin",
+            "description": "Plugin that handles the GetResourcesPermissions web service. The web service is invoked with a username and a service id and should respond with all permissions the given user has in that service."
+        },
+        {
+            "name": "iipax.service.casekernel.plugin.ws.SearchRecordEventsSynchPlugin",
+            "description": "Plugin to perform synchronous search for record events.",
+            "arguments": {
+                "Partition": {
+                    "type": "string",
+                    "description": "The partition to perform searches in."
+                }
+            }
+        },
+        {
+            "name": "iipax.service.iwa.registry.GetConfigurationStructureValuePlugin",
+            "description": "Plugin for getting structured configuration values"
+        }
+    ],
+    "iipax.generic.plugin.broker.ValidatePlugin": [
+        {
+            "name": "iipax.business.lta.plugin.ws.ReflectiveSipValidatePlugin",
+            "description": "Validation plugin that returns the receipt of an asynchronous web service. In an earlier version, it was implemented with reflection. The name and parameter is kept for configuration compatibility reasons. The responseClass parameter should be set to the class representing the response element. Valid values are: <ul> <li>*.ValidateSipAsynchResponse <li>*.ArchiveSipAsynchResponse <li>*.OrderDipResponse </ul> (the package doesn't matter).",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                },
+                "ResponseClass": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.ArchiveSipAsynchResponsePlugin",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.lta.plugin.ws2.ValidateSipAsynchResponsePlugin",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.engine.test.TestReceiptPlugin",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.engine.test.TestSoapFaultValidatePlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.ReturnTxIdValidationPlugin",
+            "description": "Validation plugin that returns txID from MTS of the sent message.",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.SignatureValidatePlugin",
+            "description": "Validation plugin for signature verification. Calls the {@link SignatureCheckServiceImpl} to verify that the signature is correct for the signed data.",
+            "arguments": {
+                "Data": {
+                    "type": "int",
+                    "description": "Which data part that contains the signed data"
+                },
+                "Signature": {
+                    "type": "int",
+                    "description": "Which data part that contains the signature"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.XmlSchemaValidatePlugin",
+            "arguments": {
+                "SchemaPath": {
+                    "type": "string",
+                    "multivalued": true
+                },
+                "SchemaNS": {
+                    "type": "string",
+                    "multivalued": true
+                },
+                "DataPart": {
+                    "type": "int"
+                },
+                "CacheTimeOut": {
+                    "type": "long"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.XmlValidationPlugin",
+            "description": "Validation plugin for xml files. Xml files must specify a grammar and ar checked against the dtd. An argument mimeparts should specify which mimeparts to validate.<br> Example of rtl rule: iipax.service.brokerkernel.plugin.XmlValidationPlugin config=1 config=3",
+            "arguments": {
+                "Config": {
+                    "type": "string",
+                    "multivalued": true
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.TestReceiptPlugin",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.TestValidatePlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.shs2.test.DuplicateTestValidatePlugin",
+            "arguments": {
+                "Barrier": {
+                    "type": "CyclicBarrier"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.stc.test.FailingValidatePlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestProcAttrsValidatePlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestValidatePlugin",
+            "arguments": {
+                "Status": {
+                    "type": "string"
+                },
+                "Fail": {
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.iwa.contact.ValidateCommentPlugin",
+            "arguments": {
+                "Receipt": {
+                    "type": "Receipt"
+                }
+            }
+        }
+    ],
+    "iipax.generic.plugin.broker.RegisterPlugin": [
+        {
+            "name": "iipax.business.shsarchive.plugin.FileArchivePlugin",
+            "description": "Default message archive plugin. This plugin will archive messages (store them in a file system), and possibly sign and timestamp them.",
+            "arguments": {
+                "Location": {
+                    "type": "string"
+                },
+                "Structure": {
+                    "type": "string"
+                },
+                "Sign": {
+                    "type": "string"
+                },
+                "WriteLabel": {
+                    "type": "string"
+                },
+                "Attributes": {
+                    "type": "string"
+                },
+                "Duplicates": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.business.shsarchive.plugin.LtaArchivePlugin",
+            "arguments": {
+                "Origin": {
+                    "type": "string",
+                    "description": "This parameter is copied to originator in the SHS message sent to archive."
+                },
+                "ObjectType": {
+                    "type": "string",
+                    "description": "The objectType to set."
+                },
+                "Location": {
+                    "type": "string"
+                },
+                "Structure": {
+                    "type": "string"
+                },
+                "Sign": {
+                    "type": "string"
+                },
+                "Attributes": {
+                    "type": "string"
+                },
+                "Duplicates": {
+                    "type": "string"
+                },
+                "LtaRootNode": {
+                    "type": "string",
+                    "description": "Method for specifying the LTA root node for all LTA messages, i.e. the first container element in the StoragePath element in Index Object"
+                },
+                "Filename": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.TestRegisterPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestRegisterPlugin"
+        }
+    ],
+    "iipax.generic.plugin.broker.FormatPlugin": [
+        {
+            "name": "iipax.service.brokerkernel.plugin.CharsetConverterFormatPlugin",
+            "description": "Converts the the character encoding in a data part from one type to another. Can also substitute one character (or a pair) with another character (or a pair). Useful e.g to convert line ending characters.",
+            "arguments": {
+                "Config": {
+                    "type": "string",
+                    "multivalued": true
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.MessageInfoFormatPlugin",
+            "arguments": {
+                "Sender": {
+                    "type": "string"
+                },
+                "Receiver": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.RemoveDataPartFormatPlugin",
+            "description": "Simple format plugin that removes the specified data parts from a message.",
+            "arguments": {
+                "DataPart": {
+                    "type": "int",
+                    "multivalued": true
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.plugin.XsltFormatPlugin",
+            "description": "Generic XSLT transforming plugin.",
+            "arguments": {
+                "Part": {
+                    "type": "int",
+                    "multivalued": true
+                },
+                "Template": {
+                    "type": "string",
+                    "multivalued": true
+                },
+                "ContentType": {
+                    "type": "string",
+                    "multivalued": true
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.rest.test.TestFormatPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.CapitalizeFormatPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestFormatPlugin",
+            "arguments": {
+                "Status": {
+                    "type": "string"
+                },
+                "Fail": {
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestInsertDataPartFormatPlugin"
+        },
+        {
+            "name": "iipax.service.brokerkernel.test.util.TestProcAttrsFormatPlugin"
+        },
+        {
+            "name": "iipax.service.iwa.contact.TransformCommentToMail",
+            "description": "Transforms a {@link SendCommentType} message into a message that could be sent via mail. The plugin argument 'fromEmailAddress' and 'toEmailAddress' MUST be set in order for this plugin to work. The argument 'subject' is optional and can be set to adjust the subject of the mail. <br>",
+            "arguments": {
+                "FromEmailAddress": {
+                    "type": "string"
+                },
+                "ToEmailAddress": {
+                    "type": "string"
+                },
+                "Subject": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.shsbroker.plugin.ShsLabelFormatPlugin",
+            "arguments": {
+                "Sender": {
+                    "type": "string"
+                },
+                "Receiver": {
+                    "type": "string"
+                },
+                "Test": {
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "iipax.service.ssekbroker.plugin.XOPFormatPlugin",
+            "description": "This plugin converts an SSEK XOP mime message to an SSEK soap message"
+        },
+        {
+            "name": "iipax.service.ssekbroker.test.util.TestFormatPlugin"
+        }
+    ]
 }
