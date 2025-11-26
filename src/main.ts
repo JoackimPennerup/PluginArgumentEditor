@@ -1,6 +1,6 @@
 import { minimalSetup, EditorView } from "codemirror";
 import { EditorState, Compartment } from "@codemirror/state";
-import { autocompletion, startCompletion } from "@codemirror/autocomplete";
+import { autocompletion } from "@codemirror/autocomplete";
 import { pluginConfigLanguage } from "./pluginConfigLanguage";
 import { createPluginConfigLinter } from "./linting";
 import {
@@ -9,7 +9,8 @@ import {
   getPluginMapForTopLevel,
   listTopLevelKeys
 } from "./pluginRegistry";
-import { findCompletionRange, pluginConfigCompletionSource } from "./completions";
+import { pluginConfigCompletionSource } from "./completions";
+import { triggerCompletionIfNeeded } from "./completionTriggers";
 
 const initialConfig =
   "iipax.service.brokerkernel.plugin.MailPushPlugin SmtpHost=192.168.0.52 SmtpPort=abc Attachment=1 Attachment=2 UnknownArg=42";
@@ -65,17 +66,7 @@ function pluginCompletion(topLevelKey: string) {
 }
 
 function triggerCompletionIfFocused() {
-  if (!view.hasFocus) {
-    return;
-  }
-
-  const match = findCompletionRange(view.state);
-
-  if (match && match.from < match.to) {
-    view.dispatch({ selection: { anchor: match.from, head: match.to } });
-  }
-
-  startCompletion(view);
+  triggerCompletionIfNeeded(view);
 }
 
 const state = EditorState.create({
