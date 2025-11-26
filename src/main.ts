@@ -3,14 +3,14 @@ import { EditorState, Compartment } from "@codemirror/state";
 import { autocompletion } from "@codemirror/autocomplete";
 import { pluginConfigLanguage } from "./pluginConfigLanguage";
 import { createPluginConfigLinter } from "./linting";
+import { pluginConfigCompletionSource } from "./completions";
+import { triggerCompletionIfNeeded } from "./completionTriggers";
 import {
   findTopLevelForPlugin,
   formatTopLevelLabel,
-  getPluginMapForTopLevel,
-  listTopLevelKeys
-} from "./pluginRegistry";
-import { pluginConfigCompletionSource } from "./completions";
-import { triggerCompletionIfNeeded } from "./completionTriggers";
+  listTopLevelKeys,
+  requestPluginByName
+} from "./pluginService";
 
 const initialConfig =
   "iipax.service.brokerkernel.plugin.MailPushPlugin SmtpHost=192.168.0.52 SmtpPort=abc Attachment=1 Attachment=2 UnknownArg=42";
@@ -19,10 +19,12 @@ const topLevelSelect = document.querySelector<HTMLSelectElement>("#registry-sele
 const editorParent = document.querySelector<HTMLElement>("#editor");
 
 if (!topLevelSelect) {
+  // Without the selector we cannot scope plugin lookups to a registry.
   throw new Error("Registry selector not found");
 }
 
 if (!editorParent) {
+  // The editor needs a mount point to render the CodeMirror instance.
   throw new Error("Editor mount point not found");
 }
 
@@ -39,6 +41,7 @@ const detectedTopLevel = findTopLevelForPlugin(initialConfig.split(" ")[0]);
 const defaultTopLevel = detectedTopLevel ?? topLevelKeys[0];
 
 if (!defaultTopLevel) {
+  // Avoid bootstrapping when there are no registries to target.
   throw new Error("No plugin registries found");
 }
 
@@ -48,18 +51,22 @@ const linterCompartment = new Compartment();
 const completionCompartment = new Compartment();
 const completionRetarget = EditorView.updateListener.of((update) => {
   if (update.docChanged && update.view.hasFocus) {
+    // Keep completions aligned with the caret whenever edits happen.
     triggerCompletionIfFocused();
   }
 });
 
-function pluginLinter(topLevelKey: string) {
-  const pluginMap = getPluginMapForTopLevel(topLevelKey);
-  return createPluginConfigLinter(pluginMap);
+function pluginResolver(topLevelKey: string) {
+  return (pluginName: string) => requestPluginByName(pluginName, topLevelKey);
 }
+
+function pluginLinter(topLevelKey: string) {
+  return createPluginConfigLinter(pluginResolver(topLevelKey));
+}
+
 function pluginCompletion(topLevelKey: string) {
-  const pluginMap = getPluginMapForTopLevel(topLevelKey);
   return autocompletion({
-    override: [pluginConfigCompletionSource(pluginMap)],
+    override: [pluginConfigCompletionSource(topLevelKey)],
     activateOnTyping: true,
     closeOnPick: false
   });

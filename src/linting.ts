@@ -1,11 +1,7 @@
 import { Diagnostic, linter } from "@codemirror/lint";
 import { syntaxTree } from "@codemirror/language";
 import { SyntaxNode, TreeCursor } from "@lezer/common";
-import { PluginDef, pluginsByName } from "./pluginRegistry";
-
-interface PluginResolver {
-  (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
-}
+import { PluginDef, requestPluginByName } from "./pluginService";
 
 interface PluginResolver {
   (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
@@ -52,13 +48,11 @@ function validateArgument(
   return null;
 }
 
-export function createPluginConfigLinter(
-  resolvePlugin: PluginResolver | Map<string, PluginDef> = (name) => pluginsByName.get(name) ?? null
-) {
-  const resolver: PluginResolver =
-    resolvePlugin instanceof Map
-      ? (name) => resolvePlugin.get(name) ?? null
-      : resolvePlugin;
+/**
+ * Creates a CodeMirror linter that validates plugin arguments using a resolver service.
+ */
+export function createPluginConfigLinter(resolvePlugin: PluginResolver = requestPluginByName) {
+  const resolver: PluginResolver = resolvePlugin;
 
   return linter(async (view) => {
     const diagnostics: Diagnostic[] = [];
@@ -70,10 +64,12 @@ export function createPluginConfigLinter(
 
     walkTree(tree.cursor(), (cursor) => {
       if (cursor.type.name === "PluginClass" && !pluginNode) {
+        // Track the first plugin declaration to anchor argument lookups.
         pluginNode = cursor.node;
       }
 
       if (cursor.type.name === "Arg") {
+        // Capture each argument node so we can validate naming, multiplicity, and values.
         const nameNode = cursor.node.getChild("ArgName");
         const valueNode = findValueNode(cursor.node);
 
@@ -84,6 +80,7 @@ export function createPluginConfigLinter(
     });
 
     if (!pluginNode) {
+      // Without a plugin class there is nothing to validate.
       return diagnostics;
     }
 
@@ -91,6 +88,7 @@ export function createPluginConfigLinter(
     const pluginDef = await resolver(pluginName);
 
     if (!pluginDef) {
+      // Surface a warning when the plugin cannot be loaded from the active registry.
       diagnostics.push({
         from: pluginNode.from,
         to: pluginNode.to,
@@ -112,6 +110,7 @@ export function createPluginConfigLinter(
       const lookup = argDefs.get(typedName.toLowerCase());
 
       if (!lookup) {
+        // Flag any argument names that the plugin does not define.
         diagnostics.push({
           from: nameNode.from,
           to: nameNode.to,
@@ -125,6 +124,7 @@ export function createPluginConfigLinter(
       seenCounts.set(lookup.canonical, count);
 
       if (count > 1 && !lookup.def.multivalued) {
+        // Warn when non-multivalued arguments are repeated.
         diagnostics.push({
           from: nameNode.from,
           to: nameNode.to,
@@ -133,10 +133,22 @@ export function createPluginConfigLinter(
         });
       }
 
-      const valueText = valueNode ? readNodeText(valueNode, doc) : "";
+      if (!valueNode) {
+        // Warn when an argument name is provided without any value token following it.
+        diagnostics.push({
+          from: nameNode.from,
+          to: nameNode.to,
+          message: `Argument '${lookup.canonical}' is missing a value.`,
+          severity: "warning"
+        });
+        continue;
+      }
+
+      const valueText = readNodeText(valueNode, doc);
       const typeError = validateArgument(lookup.canonical, valueText, lookup.def);
 
       if (typeError === "error") {
+        // Surface type validation failures based on the plugin's argument metadata.
         diagnostics.push({
           from: valueNode ? valueNode.from : nameNode.to,
           to: valueNode ? valueNode.to : nameNode.to,

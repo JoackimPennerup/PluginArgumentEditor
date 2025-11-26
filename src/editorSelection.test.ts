@@ -1,28 +1,37 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { minimalSetup } from "codemirror";
 import { CompletionContext, autocompletion } from "@codemirror/autocomplete";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { JSDOM } from "jsdom";
 
-import { pluginConfigCompletionSource } from "./completions";
 import { pluginConfigLanguage } from "./pluginConfigLanguage";
-import type { PluginDef } from "./pluginRegistry";
+import type { PluginDef } from "./pluginService";
 import { triggerCompletionIfNeeded } from "./completionTriggers";
 
-const pluginName = "example.plugin.DemoPlugin";
-const pluginDef: PluginDef = {
-  name: pluginName,
-  description: "Demo plugin for completion tests",
-  arguments: {
-    Alpha: { type: "string" },
-    Beta: { type: "int" },
-    Gamma: { type: "boolean" }
-  }
-};
+const pluginData = vi.hoisted(() => ({
+  pluginName: "example.plugin.DemoPlugin",
+  pluginDef: {
+    name: "example.plugin.DemoPlugin",
+    description: "Demo plugin for completion tests",
+    arguments: {
+      Alpha: { type: "string" },
+      Beta: { type: "int" },
+      Gamma: { type: "boolean" }
+    }
+  } satisfies PluginDef,
+  topLevelKey: "test.registry"
+}));
 
-const pluginMap = new Map<string, PluginDef>([[pluginName, pluginDef]]);
-const completionSource = pluginConfigCompletionSource(pluginMap);
+vi.mock("./pluginService", () => ({
+  __esModule: true,
+  isValidPluginClassName: () => true,
+  requestPluginByName: vi.fn(async (pluginName: string) =>
+    pluginName === pluginData.pluginName ? pluginData.pluginDef : null
+  )
+}));
+
+const { pluginConfigCompletionSource } = await import("./completions");
 
 beforeAll(() => {
   const { window } = new JSDOM("<body></body>");
@@ -70,7 +79,8 @@ beforeAll(() => {
   });
 });
 
-function createView(doc = `${pluginName} `) {
+function createView(doc = `${pluginData.pluginName} `) {
+  const completionSource = pluginConfigCompletionSource(pluginData.topLevelKey);
   const state = EditorState.create({
     doc,
     extensions: [
@@ -110,7 +120,7 @@ describe("completion retargeting", () => {
       selection: { anchor: view.state.doc.length + 4 }
     });
 
-    expect(view.state.doc.toString()).toBe(`${pluginName} Alpha`);
+    expect(view.state.doc.toString()).toBe(`${pluginData.pluginName} Alpha`);
     expect(view.state.selection.main.from).toBe(view.state.doc.length);
     expect(view.state.selection.main.empty).toBe(true);
 
@@ -122,29 +132,33 @@ describe("completion retargeting", () => {
     view.focus();
 
     const context = new CompletionContext(view.state, view.state.doc.length, true);
+    const completionSource = pluginConfigCompletionSource(pluginData.topLevelKey);
     const result = completionSource(context);
-    const alphaCompletion = result?.options.find((option) => option.label === "Alpha");
 
-    if (!result || !alphaCompletion) {
-      throw new Error("Missing completion data for Alpha");
-    }
+    return result.then((data) => {
+      const alphaCompletion = data?.options.find((option) => option.label === "Alpha");
 
-    const insertText = typeof alphaCompletion.apply === "string" ? alphaCompletion.apply : "";
+      if (!data || !alphaCompletion) {
+        throw new Error("Missing completion data for Alpha");
+      }
 
-    view.dispatch({
-      changes: { from: result.from, to: context.pos, insert: insertText },
-      selection: { anchor: result.from + insertText.length }
+      const insertText = typeof alphaCompletion.apply === "string" ? alphaCompletion.apply : "";
+
+      view.dispatch({
+        changes: { from: data.from, to: context.pos, insert: insertText },
+        selection: { anchor: data.from + insertText.length }
+      });
+
+      view.dispatch({
+        changes: { from: view.state.doc.length, insert: "foo" },
+        selection: { anchor: view.state.doc.length + 3 }
+      });
+
+      expect(view.state.doc.toString()).toBe(`${pluginData.pluginName} Alpha=foo`);
+      expect(view.state.selection.main.from).toBe(view.state.doc.length);
+      expect(view.state.selection.main.empty).toBe(true);
+
+      view.destroy();
     });
-
-    view.dispatch({
-      changes: { from: view.state.doc.length, insert: "foo" },
-      selection: { anchor: view.state.doc.length + 3 }
-    });
-
-    expect(view.state.doc.toString()).toBe(`${pluginName} Alpha=foo`);
-    expect(view.state.selection.main.from).toBe(view.state.doc.length);
-    expect(view.state.selection.main.empty).toBe(true);
-
-    view.destroy();
   });
 });
