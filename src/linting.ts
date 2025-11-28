@@ -1,7 +1,12 @@
 import { Diagnostic, linter } from "@codemirror/lint";
 import { syntaxTree } from "@codemirror/language";
 import { SyntaxNode, TreeCursor } from "@lezer/common";
-import { PluginDef, requestPluginByName } from "./pluginService";
+import {
+  PluginDef,
+  findTopLevelForPlugin,
+  formatTopLevelLabel,
+  requestPluginByName
+} from "./pluginService";
 
 interface PluginResolver {
   (pluginName: string): PluginDef | null | Promise<PluginDef | null>;
@@ -51,7 +56,10 @@ function validateArgument(
 /**
  * Creates a CodeMirror linter that validates plugin arguments using a resolver service.
  */
-export function createPluginConfigLinter(resolvePlugin: PluginResolver = requestPluginByName) {
+export function createPluginConfigLinter(
+  resolvePlugin: PluginResolver = requestPluginByName,
+  topLevelKey?: string
+) {
   const resolver: PluginResolver = resolvePlugin;
 
   return linter(async (view) => {
@@ -88,11 +96,17 @@ export function createPluginConfigLinter(resolvePlugin: PluginResolver = request
     const pluginDef = await resolver(pluginName);
 
     if (!pluginDef) {
-      // Surface a warning when the plugin cannot be loaded from the active registry.
+      const expectedTopLevel = findTopLevelForPlugin(pluginName);
+      const selectedLabel = topLevelKey ? formatTopLevelLabel(topLevelKey) : null;
+      const expectedLabel = expectedTopLevel ? formatTopLevelLabel(expectedTopLevel) : null;
+
       diagnostics.push({
         from: pluginNode.from,
         to: pluginNode.to,
-        message: `Unknown plugin: ${pluginName} (not found in classpath).`,
+        message:
+          selectedLabel && expectedLabel && expectedTopLevel !== topLevelKey
+            ? `${pluginName} is a ${expectedLabel} plugin, not a ${selectedLabel} plugin.`
+            : `Unknown plugin: ${pluginName} (not found in classpath).`,
         severity: "warning"
       });
       return diagnostics;
