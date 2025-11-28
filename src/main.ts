@@ -60,7 +60,7 @@ function pluginResolver(topLevelKey: string) {
 }
 
 function pluginLinter(topLevelKey: string) {
-  return createPluginConfigLinter(pluginResolver(topLevelKey));
+  return createPluginConfigLinter(pluginResolver(topLevelKey), topLevelKey);
 }
 
 function pluginCompletion(topLevelKey: string) {
